@@ -26,6 +26,7 @@ class TokenStore:
 
     def set(self, key: str, value):
         with self._lock:
+            self._data = self._load()
             self._data[key] = value
             self._save()
 

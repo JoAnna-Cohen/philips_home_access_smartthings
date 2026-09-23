@@ -62,6 +62,7 @@ def oauth_authorize_get():
     session["oauth_state"] = request.args.get("state", "")
     session["oauth_client_id"] = request.args.get("client_id", "")
 
+    _LOGGER.warning("OAUTH GET: redirect_uri=%s", session["oauth_redirect_uri"])
     return render_template("login.html", regions=REGIONS, error=None)
 
 
@@ -74,6 +75,8 @@ def oauth_authorize_post():
 
     redirect_uri = session.get("oauth_redirect_uri", "")
     state = session.get("oauth_state", "")
+
+    _LOGGER.warning("OAUTH POST: redirect_uri=%s state_present=%s", redirect_uri, bool(state))
 
     if not username or not password or not region_code:
         return render_template(
