@@ -31,6 +31,7 @@ class TokenStore:
 
     def get(self, key: str, default=None):
         with self._lock:
+            self._data = self._load()
             return self._data.get(key, default)
 
     def delete(self, key: str):
