@@ -119,7 +119,7 @@ class SmartThingsConnector:
                 "swVersion": d.get("lockSoftwareVersion", "1.0"),
             },
             "deviceContext": {
-                "categories": ["SmartLock"],
+                "categories": ["Lock"],
             },
             "deviceHandlerType": "c2c-lock",
             "capabilities": capabilities,
