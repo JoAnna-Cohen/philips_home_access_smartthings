@@ -82,12 +82,16 @@ class SmartThingsConnector:
                 "discoveryResponse", request_id, "DEVICE_UNAVAILABLE", str(exc)
             )
 
+        _LOGGER.warning("DISCOVERY: %d raw devices: %s", len(raw_devices), raw_devices)
+
         devices = []
         for d in raw_devices:
             if d.get("deviceType") != "LOCK":
+                _LOGGER.warning("DISCOVERY: skipping non-LOCK device: type=%s wifiSN=%s", d.get("deviceType"), d.get("wifiSN"))
                 continue
             esn = d.get("wifiSN")
             if not esn:
+                _LOGGER.warning("DISCOVERY: skipping device with no wifiSN: %s", d)
                 continue
             devices.append(self._build_st_device(d, esn))
 
