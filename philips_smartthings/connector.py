@@ -50,7 +50,7 @@ class SmartThingsConnector:
         if interaction == "commandRequest":
             return self._command(body, access_token, request_id)
         if interaction == "grantCallbackAccess":
-            return self._grant_callback(request_id)
+            return self._grant_callback(body, request_id)
         if interaction == "integrationDeleted":
             self._auth.revoke(access_token)
             return {"headers": _headers("integrationDeletedResponse", request_id)}
@@ -82,12 +82,16 @@ class SmartThingsConnector:
                 "discoveryResponse", request_id, "DEVICE_UNAVAILABLE", str(exc)
             )
 
+        _LOGGER.debug("Discovery: %d device(s) returned", len(raw_devices))
+
         devices = []
         for d in raw_devices:
             if d.get("deviceType") != "LOCK":
+                _LOGGER.warning("DISCOVERY: skipping non-LOCK device: type=%s wifiSN=%s", d.get("deviceType"), d.get("wifiSN"))
                 continue
             esn = d.get("wifiSN")
             if not esn:
+                _LOGGER.warning("DISCOVERY: skipping device with no wifiSN: %s", d)
                 continue
             devices.append(self._build_st_device(d, esn))
 
@@ -102,6 +106,7 @@ class SmartThingsConnector:
 
         capabilities = [
             {"id": "st.lock", "version": 1},
+            {"id": "st.lockAlarm", "version": 1},
             {"id": "st.battery", "version": 1},
         ]
 
@@ -115,9 +120,9 @@ class SmartThingsConnector:
                 "swVersion": d.get("lockSoftwareVersion", "1.0"),
             },
             "deviceContext": {
-                "categories": ["SmartLock"],
+                "categories": ["Lock"],
             },
-            "deviceHandlerType": "c2c-lock",
+            "deviceHandlerType": "c2c-lock-5",
             "capabilities": capabilities,
         }
 
@@ -219,8 +224,13 @@ class SmartThingsConnector:
     # Grant callback access
     # ------------------------------------------------------------------
 
-    def _grant_callback(self, request_id: str) -> dict:
-        # Proactive state push is not implemented yet; just acknowledge.
+    def _grant_callback(self, body: dict, request_id: str) -> dict:
+        # Store callback credentials for future proactive updates.
+        callback_auth = body.get("callbackAuthentication", {})
+        callback_urls = body.get("callbackUrls", {})
+        if callback_auth or callback_urls:
+            access_token = body.get("authentication", {}).get("token", "")
+            self._auth.store_callback_credentials(access_token, callback_auth, callback_urls)
         return {"headers": _headers("grantCallbackAccessResponse", request_id)}
 
     # ------------------------------------------------------------------
@@ -232,18 +242,33 @@ class SmartThingsConnector:
         states = []
 
         # Lock state: openStatus == 1 means LOCKED
+        # Omit entirely when unknown — "unknown" is not a valid st.lock enum value.
         open_status = d.get("openStatus")
         if open_status is not None:
-            lock_value = "locked" if open_status == 1 else "unlocked"
-        else:
-            lock_value = "unknown"
+            states.append(
+                {
+                    "component": "main",
+                    "capability": "st.lock",
+                    "attribute": "lock",
+                    "value": "locked" if open_status == 1 else "unlocked",
+                }
+            )
 
+        # Lock alarm: duress (forced entry) takes priority over defences (tamper/vibration)
+        duress = d.get("duress", 0)
+        defences = d.get("defences", 0)
+        if duress:
+            alarm_value = "intrusion"
+        elif defences:
+            alarm_value = "tampering"
+        else:
+            alarm_value = "clear"
         states.append(
             {
                 "component": "main",
-                "capability": "st.lock",
-                "attribute": "lock",
-                "value": lock_value,
+                "capability": "st.lockAlarm",
+                "attribute": "alarm",
+                "value": alarm_value,
             }
         )
 

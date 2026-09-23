@@ -115,6 +115,7 @@ class AuthManager:
             "refresh_token": refresh_token,
             "token_type": "Bearer",
             "expires_in": ACCESS_TOKEN_TTL,
+            "scope": "",
         }
 
     def refresh_access_token(self, refresh_token: str) -> dict | None:
@@ -178,6 +179,7 @@ class AuthManager:
             "refresh_token": new_rt,
             "token_type": "Bearer",
             "expires_in": ACCESS_TOKEN_TTL,
+            "scope": "",
         }
 
     # ------------------------------------------------------------------
@@ -208,7 +210,16 @@ class AuthManager:
     # Revocation
     # ------------------------------------------------------------------
 
+    def store_callback_credentials(self, access_token: str, callback_auth: dict, callback_urls: dict):
+        """Persist SmartThings callback credentials for proactive state updates."""
+        self._philips_sessions.set(
+            f"callback:{access_token}",
+            {"auth": callback_auth, "urls": callback_urls},
+        )
+
     def revoke(self, access_token: str):
-        self._access_tokens.delete(access_token)
-        self._philips_sessions.delete(access_token)
+        # Clean up all token stores including refresh tokens and callback creds.
+        for store in (self._access_tokens, self._philips_sessions, self._refresh_tokens):
+            store.delete(access_token)
+        self._philips_sessions.delete(f"callback:{access_token}")
         _LOGGER.debug("Revoked access token (masked): %s***", access_token[:8])

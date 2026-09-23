@@ -62,6 +62,7 @@ def oauth_authorize_get():
     session["oauth_state"] = request.args.get("state", "")
     session["oauth_client_id"] = request.args.get("client_id", "")
 
+    _LOGGER.debug("OAUTH GET: redirect_uri=%s", session["oauth_redirect_uri"])
     return render_template("login.html", regions=REGIONS, error=None)
 
 
@@ -74,6 +75,8 @@ def oauth_authorize_post():
 
     redirect_uri = session.get("oauth_redirect_uri", "")
     state = session.get("oauth_state", "")
+
+    _LOGGER.debug("OAUTH POST: redirect_uri=%s state_present=%s", redirect_uri, bool(state))
 
     if not username or not password or not region_code:
         return render_template(
@@ -135,6 +138,7 @@ def oauth_token():
         code = request.form.get("code", "")
         token_resp = auth_manager.exchange_code(code)
         if not token_resp:
+            _LOGGER.warning("Token exchange failed for grant_type=authorization_code")
             return jsonify({"error": "invalid_grant"}), 400
         return jsonify(token_resp)
 

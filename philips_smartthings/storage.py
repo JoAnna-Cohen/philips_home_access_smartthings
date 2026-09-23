@@ -26,11 +26,13 @@ class TokenStore:
 
     def set(self, key: str, value):
         with self._lock:
+            self._data = self._load()
             self._data[key] = value
             self._save()
 
     def get(self, key: str, default=None):
         with self._lock:
+            self._data = self._load()
             return self._data.get(key, default)
 
     def delete(self, key: str):

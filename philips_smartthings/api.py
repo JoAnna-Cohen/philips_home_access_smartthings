@@ -236,7 +236,6 @@ class PhilipsHomeAccessAPI:
             "k-language": "en_US",
             "k-signv": "1.0.0",
             "content-type": "application/json",
-            "content-length": "249",
             "accept-encoding": "gzip",
         }
 
