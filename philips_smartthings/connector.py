@@ -121,7 +121,7 @@ class SmartThingsConnector:
             "deviceContext": {
                 "categories": ["Lock"],
             },
-            "deviceHandlerType": "c2c-lock",
+            "deviceHandlerType": "c2c-lock-2",
             "capabilities": capabilities,
         }
 
