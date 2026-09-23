@@ -106,6 +106,7 @@ class SmartThingsConnector:
 
         capabilities = [
             {"id": "st.lock", "version": 1},
+            {"id": "st.lockAlarm", "version": 1},
             {"id": "st.battery", "version": 1},
         ]
 
@@ -121,7 +122,7 @@ class SmartThingsConnector:
             "deviceContext": {
                 "categories": ["Lock"],
             },
-            "deviceHandlerType": "c2c-lock-2",
+            "deviceHandlerType": "c2c-lock-5",
             "capabilities": capabilities,
         }
 
@@ -252,6 +253,24 @@ class SmartThingsConnector:
                     "value": "locked" if open_status == 1 else "unlocked",
                 }
             )
+
+        # Lock alarm: duress (forced entry) takes priority over defences (tamper/vibration)
+        duress = d.get("duress", 0)
+        defences = d.get("defences", 0)
+        if duress:
+            alarm_value = "intrusion"
+        elif defences:
+            alarm_value = "tampering"
+        else:
+            alarm_value = "clear"
+        states.append(
+            {
+                "component": "main",
+                "capability": "st.lockAlarm",
+                "attribute": "alarm",
+                "value": alarm_value,
+            }
+        )
 
         # Battery (percentage)
         battery = d.get("power")
