@@ -130,12 +130,15 @@ def oauth_token():
             return jsonify({"error": "invalid_client"}), 401
 
     grant_type = request.form.get("grant_type", "")
+    _LOGGER.warning("TOKEN REQUEST: grant_type=%s client_id=%s", grant_type, client_id)
 
     if grant_type == "authorization_code":
         code = request.form.get("code", "")
         token_resp = auth_manager.exchange_code(code)
         if not token_resp:
+            _LOGGER.warning("TOKEN EXCHANGE FAILED: exchange_code returned None for code=%s***", code[:8])
             return jsonify({"error": "invalid_grant"}), 400
+        _LOGGER.warning("TOKEN EXCHANGE OK: issued access_token=%s***", token_resp["access_token"][:8])
         return jsonify(token_resp)
 
     if grant_type == "refresh_token":
