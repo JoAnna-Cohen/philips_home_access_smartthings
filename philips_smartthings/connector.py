@@ -82,7 +82,7 @@ class SmartThingsConnector:
                 "discoveryResponse", request_id, "DEVICE_UNAVAILABLE", str(exc)
             )
 
-        _LOGGER.warning("DISCOVERY RAW FULL: %s", raw_devices)
+        _LOGGER.debug("Discovery: %d device(s) returned", len(raw_devices))
 
         devices = []
         for d in raw_devices:

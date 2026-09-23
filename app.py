@@ -62,7 +62,7 @@ def oauth_authorize_get():
     session["oauth_state"] = request.args.get("state", "")
     session["oauth_client_id"] = request.args.get("client_id", "")
 
-    _LOGGER.warning("OAUTH GET: redirect_uri=%s", session["oauth_redirect_uri"])
+    _LOGGER.debug("OAUTH GET: redirect_uri=%s", session["oauth_redirect_uri"])
     return render_template("login.html", regions=REGIONS, error=None)
 
 
@@ -76,7 +76,7 @@ def oauth_authorize_post():
     redirect_uri = session.get("oauth_redirect_uri", "")
     state = session.get("oauth_state", "")
 
-    _LOGGER.warning("OAUTH POST: redirect_uri=%s state_present=%s", redirect_uri, bool(state))
+    _LOGGER.debug("OAUTH POST: redirect_uri=%s state_present=%s", redirect_uri, bool(state))
 
     if not username or not password or not region_code:
         return render_template(
@@ -133,15 +133,13 @@ def oauth_token():
             return jsonify({"error": "invalid_client"}), 401
 
     grant_type = request.form.get("grant_type", "")
-    _LOGGER.warning("TOKEN REQUEST: grant_type=%s client_id=%s", grant_type, client_id)
 
     if grant_type == "authorization_code":
         code = request.form.get("code", "")
         token_resp = auth_manager.exchange_code(code)
         if not token_resp:
-            _LOGGER.warning("TOKEN EXCHANGE FAILED: exchange_code returned None for code=%s***", code[:8])
+            _LOGGER.warning("Token exchange failed for grant_type=authorization_code")
             return jsonify({"error": "invalid_grant"}), 400
-        _LOGGER.warning("TOKEN EXCHANGE OK: issued access_token=%s***", token_resp["access_token"][:8])
         return jsonify(token_resp)
 
     if grant_type == "refresh_token":
