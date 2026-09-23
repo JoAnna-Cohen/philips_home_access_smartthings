@@ -50,7 +50,7 @@ class SmartThingsConnector:
         if interaction == "commandRequest":
             return self._command(body, access_token, request_id)
         if interaction == "grantCallbackAccess":
-            return self._grant_callback(request_id)
+            return self._grant_callback(body, request_id)
         if interaction == "integrationDeleted":
             self._auth.revoke(access_token)
             return {"headers": _headers("integrationDeletedResponse", request_id)}
@@ -219,8 +219,13 @@ class SmartThingsConnector:
     # Grant callback access
     # ------------------------------------------------------------------
 
-    def _grant_callback(self, request_id: str) -> dict:
-        # Proactive state push is not implemented yet; just acknowledge.
+    def _grant_callback(self, body: dict, request_id: str) -> dict:
+        # Store callback credentials for future proactive updates.
+        callback_auth = body.get("callbackAuthentication", {})
+        callback_urls = body.get("callbackUrls", {})
+        if callback_auth or callback_urls:
+            access_token = body.get("authentication", {}).get("token", "")
+            self._auth.store_callback_credentials(access_token, callback_auth, callback_urls)
         return {"headers": _headers("grantCallbackAccessResponse", request_id)}
 
     # ------------------------------------------------------------------
@@ -232,20 +237,17 @@ class SmartThingsConnector:
         states = []
 
         # Lock state: openStatus == 1 means LOCKED
+        # Omit entirely when unknown — "unknown" is not a valid st.lock enum value.
         open_status = d.get("openStatus")
         if open_status is not None:
-            lock_value = "locked" if open_status == 1 else "unlocked"
-        else:
-            lock_value = "unknown"
-
-        states.append(
-            {
-                "component": "main",
-                "capability": "st.lock",
-                "attribute": "lock",
-                "value": lock_value,
-            }
-        )
+            states.append(
+                {
+                    "component": "main",
+                    "capability": "st.lock",
+                    "attribute": "lock",
+                    "value": "locked" if open_status == 1 else "unlocked",
+                }
+            )
 
         # Battery (percentage)
         battery = d.get("power")
