@@ -35,7 +35,8 @@ class PhilipsHomeAccessAPI:
     def _normalize_mac(self, mac: str) -> str:
         if not mac:
             return ""
-        return str(mac).replace(" ", "").upper()
+        cleaned = str(mac).replace(" ", "").replace(":", "").replace("-", "").upper()
+        return ":".join(cleaned[i:i+2] for i in range(0, len(cleaned), 2))
 
     def _get_lock_transport_info(self, lock_esn):
         """Return transport details for a lock.
@@ -338,9 +339,9 @@ class PhilipsHomeAccessAPI:
         if transport["mode"] == "gateway":
             url = f"https://api.idlespacetech.com/v3/gateway/set-lock-{'close' if lock_it else 'open'}"
             payload_to_sign = {
-                "esn": transport["gateway"]["wifiSN"],
+                "esn": transport["lock"]["wifiSN"],
                 "mac": self._normalize_mac(transport["lock"].get("mac", "")),
-                "masterSn": transport["lock"]["wifiSN"],
+                "masterSn": transport["gateway"]["wifiSN"],
                 "userNumberId": 0,
                 "reqTime": str(current_time_ms),
             }
