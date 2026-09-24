@@ -59,7 +59,7 @@ class SmartThingsConnector:
         return self._global_error(
             f"{interaction}Response",
             request_id,
-            "INVALID_INTERACTION",
+            "INVALID-INTERACTION-TYPE",
             f"Unknown interaction: {interaction}",
         )
 
@@ -71,7 +71,7 @@ class SmartThingsConnector:
         api = self._auth.get_api(access_token)
         if not api:
             return self._global_error(
-                "discoveryResponse", request_id, "INVALID_TOKEN", "Invalid or expired token"
+                "discoveryResponse", request_id, self._auth.token_error(access_token), "Invalid or expired token"
             )
 
         try:
@@ -79,7 +79,7 @@ class SmartThingsConnector:
         except Exception as exc:
             _LOGGER.error("Discovery: get_devices failed: %s", exc)
             return self._global_error(
-                "discoveryResponse", request_id, "DEVICE_UNAVAILABLE", str(exc)
+                "discoveryResponse", request_id, "BAD-REQUEST", str(exc)
             )
 
         _LOGGER.debug("Discovery: %d device(s) returned", len(raw_devices))
@@ -134,7 +134,7 @@ class SmartThingsConnector:
         api = self._auth.get_api(access_token)
         if not api:
             return self._global_error(
-                "stateRefreshResponse", request_id, "INVALID_TOKEN", "Invalid or expired token"
+                "stateRefreshResponse", request_id, self._auth.token_error(access_token), "Invalid or expired token"
             )
 
         requested_ids = [
@@ -146,7 +146,7 @@ class SmartThingsConnector:
         except Exception as exc:
             _LOGGER.error("StateRefresh: get_devices failed: %s", exc)
             return self._global_error(
-                "stateRefreshResponse", request_id, "DEVICE_UNAVAILABLE", str(exc)
+                "stateRefreshResponse", request_id, "BAD-REQUEST", str(exc)
             )
 
         device_map = {
@@ -173,7 +173,7 @@ class SmartThingsConnector:
         api = self._auth.get_api(access_token)
         if not api:
             return self._global_error(
-                "commandResponse", request_id, "INVALID_TOKEN", "Invalid or expired token"
+                "commandResponse", request_id, self._auth.token_error(access_token), "Invalid or expired token"
             )
 
         try:
@@ -181,7 +181,7 @@ class SmartThingsConnector:
         except Exception as exc:
             _LOGGER.error("Command: get_devices failed: %s", exc)
             return self._global_error(
-                "commandResponse", request_id, "DEVICE_UNAVAILABLE", str(exc)
+                "commandResponse", request_id, "BAD-REQUEST", str(exc)
             )
 
         device_map = {
@@ -299,10 +299,12 @@ class SmartThingsConnector:
         response_type: str,
         request_id: str,
         error_enum: str,
-        description: str,
+        detail: str,
     ) -> dict:
-        _LOGGER.warning("Global error [%s]: %s – %s", response_type, error_enum, description)
+        # st-schema globalError: hyphenated errorEnum + "detail"; SmartThings
+        # only refreshes the access token on TOKEN-EXPIRED. See CHANGELOG.md.
+        _LOGGER.warning("Global error [%s]: %s – %s", response_type, error_enum, detail)
         return {
             "headers": _headers(response_type, request_id),
-            "globalError": {"errorEnum": error_enum, "description": description},
+            "globalError": {"errorEnum": error_enum, "detail": detail},
         }

@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-24: st-schema error format
+
+SmartThings didn't recognise this connector's error responses:
+
+- **Wrong code format.** Error codes used underscores (`INVALID_TOKEN`,
+  `DEVICE_UNAVAILABLE`, `INVALID_INTERACTION`). The st-schema spec uses
+  hyphenated codes (`INVALID-TOKEN`, `TOKEN-EXPIRED`,
+  `INVALID-INTERACTION-TYPE`, `BAD-REQUEST`).
+- **Wrong field name.** The message was sent as `description`, but the spec
+  field is `detail`.
+- **No expired-token signal.** Expired access tokens were reported the
+  same way as unknown ones. SmartThings only calls `/oauth/token` with the
+  refresh token when it gets `TOKEN-EXPIRED`. Otherwise devices just stop
+  responding after 24 hours, when the access token runs out.
+
+**Fix:**
+- Expired tokens now return `TOKEN-EXPIRED` (new `AuthManager.token_error()`),
+  and unknown ones return `INVALID-TOKEN`.
+- Philips API failures return `BAD-REQUEST`. `DEVICE-UNAVAILABLE` is only
+  valid as a per-device error, not a global one.
+- Errors now use the `detail` field.
+
 ## 2026-09-24: token storage fixes
 
 These fixes were found while building the Leviton smart panel connector

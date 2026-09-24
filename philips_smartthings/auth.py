@@ -196,6 +196,18 @@ class AuthManager:
             return None
         return self._philips_sessions.get(access_token)
 
+    def token_error(self, access_token: str) -> str:
+        """st-schema errorEnum for a token get_api() rejected.
+
+        TOKEN-EXPIRED makes SmartThings call /oauth/token with the refresh
+        token; INVALID-TOKEN means the token is unknown and the user must
+        re-link.
+        """
+        token_data = self._access_tokens.get(access_token) if access_token else None
+        if token_data and time.time() - token_data["created_at"] > token_data["expires_in"]:
+            return "TOKEN-EXPIRED"
+        return "INVALID-TOKEN"
+
     def get_api(self, access_token: str) -> PhilipsHomeAccessAPI | None:
         """Return a ready-to-use PhilipsHomeAccessAPI for the given token."""
         session = self.get_philips_session(access_token)
