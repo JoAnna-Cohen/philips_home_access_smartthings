@@ -7,8 +7,10 @@ bridges the Philips Home Access cloud API with the SmartThings platform. Once se
 your Philips locks appear in SmartThings as native devices — you can lock/unlock them,
 monitor battery and alarm state, build automations, and use them with voice assistants.
 
-> Original Philips Home Access API research and Home Assistant integration by
-> [rjbogz](https://github.com/rjbogz/philips_home_access).
+> This is an independent SmartThings Schema Connector, not a fork of rjbogz's project.
+> The Philips cloud API was reverse-engineered by
+> [rjbogz](https://github.com/rjbogz/philips_home_access) for their Home Assistant
+> integration; this connector was built from scratch using that API research as a reference.
 
 ---
 
@@ -190,6 +192,7 @@ philips_smartthings/
   storage.py                  Thread-safe file-backed key/value store
 templates/
   login.html                  OAuth login page shown to users during setup
+  index.html                  Landing page served at the root URL
 requirements.txt
 .env.example                  Configuration template
 ```
