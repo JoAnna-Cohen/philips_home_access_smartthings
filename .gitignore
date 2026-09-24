@@ -24,3 +24,6 @@ philips_sessions.json
 
 # OS
 .DS_Store
+
+# fcntl lock files
+*.json.lock

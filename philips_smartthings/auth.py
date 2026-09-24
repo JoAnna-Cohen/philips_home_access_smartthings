@@ -218,8 +218,13 @@ class AuthManager:
         )
 
     def revoke(self, access_token: str):
-        # Clean up all token stores including refresh tokens and callback creds.
-        for store in (self._access_tokens, self._philips_sessions, self._refresh_tokens):
-            store.delete(access_token)
+        # Refresh tokens are keyed by the refresh token itself (value holds the
+        # access token), so deleting by access_token never removed them. Match
+        # on the stored access_token instead. See CHANGELOG.md.
+        self._access_tokens.delete(access_token)
+        self._philips_sessions.delete(access_token)
         self._philips_sessions.delete(f"callback:{access_token}")
+        self._refresh_tokens.delete_where(
+            lambda _rt, data: data.get("access_token") == access_token
+        )
         _LOGGER.debug("Revoked access token (masked): %s***", access_token[:8])
