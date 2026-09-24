@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-09-24: gateway lock command fixes (from rjbogz upstream comparison)
+
+Two bugs in `api.py` identified by comparing against the original
+[rjbogz/philips_home_access](https://github.com/rjbogz/philips_home_access)
+API research.
+
+### `esn`/`masterSn` swapped in gateway lock commands
+
+The gateway lock/unlock payload had `esn` set to the *gateway's* `wifiSN`
+and `masterSn` set to the *lock's* `wifiSN` — exactly backwards. The Philips
+API expects `esn` = lock serial, `masterSn` = gateway serial. Lock and unlock
+commands silently failed for any lock operated through a gateway (the most
+common cloud-connected topology).
+
+### `_normalize_mac` didn't canonicalise MAC format
+
+`_normalize_mac` only stripped spaces. The Philips API expects
+`AA:BB:CC:DD:EE:FF` format; MACs arriving with dashes or no separators
+produced a malformed field. The method now strips `:` and `-`, then
+reformats as colon-separated octets.
+
 ## 2026-09-24: st-schema error format
 
 SmartThings didn't recognise this connector's error responses:
